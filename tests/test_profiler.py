@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from flux_profiler.benchmarks import StandardBenchmarks
+from flux_profiler.benchmarks import BenchmarkWorkload, StandardBenchmarks
 from flux_profiler.profiler import Profiler
 from flux_profiler.vm_adapter import (
     MiniVM,
@@ -224,17 +224,19 @@ class TestMiniVM:
 
     def test_or(self):
         vm = MiniVM()
-        # MOVI R1, 0xF0; MOVI R2, 0x0F; OR R0, R1, R2; HALT
+        # MOVI R1, 0xF0 (sign-extends to 0xFFFFFFF0); MOVI R2, 0x0F (stays 0x0000000F)
+        # OR: 0xFFFFFFF0 | 0x0000000F = 0xFFFFFFFF = -1 in signed i32
         code = bytes([0x18, 1, 0xF0, 0x18, 2, 0x0F, 0x26, 0, 1, 2, 0x00])
         vm.run(code)
-        assert vm.registers[0] == 0xFF
+        assert vm.registers[0] == -1
 
     def test_xor(self):
         vm = MiniVM()
-        # MOVI R1, 0xFF; MOVI R2, 0x0F; XOR R0, R1, R2; HALT
+        # MOVI R1, 0xFF (sign-extends to 0xFFFFFFFF = -1); MOVI R2, 0x0F (stays 0x0F)
+        # XOR: 0xFFFFFFFF ^ 0x0000000F = 0xFFFFFFF0 = -16 in signed i32
         code = bytes([0x18, 1, 0xFF, 0x18, 2, 0x0F, 0x27, 0, 1, 2, 0x00])
         vm.run(code)
-        assert vm.registers[0] == 0xF0
+        assert vm.registers[0] == -16
 
     def test_shl(self):
         vm = MiniVM()
@@ -429,25 +431,28 @@ class TestMiniVM:
 
     def test_timeout(self):
         vm = MiniVM()
-        # Infinite loop
-        code = bytes([0x43, 0, 0xFF])  # JMP R0, -1 (jump back to itself)
+        vm.MAX_INSTRUCTIONS = 10_000_000
+        # JMP is handled as Format B in this VM: [opcode, rd, offset8]
+        # offset 0xFF = -1 signed. pc advances to pc+2, then pc += (-1) = pc+1 (not a loop!)
+        # Need a NOP before it: NOP(1B) + JMP(2B, offset=-3) = back to NOP
+        code = bytes([0x01, 0x43, 0, 0xFD])  # NOP; JMP R0, -3 (back to NOP)
         vm.run(code, timeout=0.01)
         assert vm.error == "Timeout"
 
     def test_instruction_limit(self):
         vm = MiniVM()
         vm.MAX_INSTRUCTIONS = 100
-        # Tight loop
-        code = bytes([0x43, 0, 0xFF])  # JMP -1
+        # Same loop structure as timeout test
+        code = bytes([0x01, 0x43, 0, 0xFD])  # NOP; JMP R0, -3
         vm.run(code, timeout=60.0)
         assert "Instruction limit" in (vm.error or "")
 
     def test_popcnt(self):
         vm = MiniVM()
-        # MOVI R1, 255 (8 bits set); POPCNT R1
-        code = bytes([0x18, 1, 0xFF, 0x97, 1, 0x00])
+        # MOVI R1, 0x7F (127, 7 bits set — positive, no sign extension); POPCNT R1
+        code = bytes([0x18, 1, 0x7F, 0x97, 1, 0x00])
         vm.run(code)
-        assert vm.registers[1] == 8
+        assert vm.registers[1] == 7
 
     def test_popcnt_zero(self):
         vm = MiniVM()
@@ -486,10 +491,13 @@ class TestMiniVM:
 
     def test_swap(self):
         vm = MiniVM()
-        # MOVI R1, 10; MOVI R2, 20; SWP R1, R1, R2
-        code = bytes([0x18, 1, 10, 0x18, 2, 20, 0x3B, 1, 1, 2, 0x00])
+        # SWP rd, rs1, rs2: swap(rd, rs1) — values of rd and rs1 are exchanged
+        # MOVI R1, 10; MOVI R2, 20; SWP R1, R1, R2 → swap(R1, R1) — no-op
+        # Use: SWP R1, R2, R0 → swap(R1, R2): R1 gets R2(20), R2 gets R1(10)
+        code = bytes([0x18, 1, 10, 0x18, 2, 20, 0x3B, 1, 2, 0, 0x00])
         vm.run(code)
         assert vm.registers[1] == 20
+        assert vm.registers[2] == 10
 
     def test_loadoff(self):
         vm = MiniVM()

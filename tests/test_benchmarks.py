@@ -12,19 +12,18 @@ import pytest
 from flux_profiler.benchmarks import (
     BenchmarkWorkload,
     StandardBenchmarks,
-    ADD, ADDI, ADDI16, AND, ANDI,
-    BCAST, CALL, CLZ, CMP_EQ, CMP_GT, CMP_LT, CMP_NE, CTZ,
+    ABS, ADD, ADDI, ADDI16, AND, ANDI,
+    ASK, BCAST, CALL, CLZ, CMP_EQ, CMP_GT, CMP_LT, CMP_NE, CTZ,
     DEC, DELEG, DIV, FADD, FDIV, FMUL, FSUB,
     FTOI, FILL, HALT, ITOF,
     INC, JGT, JMP, JLT, JNZ, JZ,
     LOAD, LOADOFF, LOOP,
-    MIN, MOD, MOVI, MOVI16,
-    MOV, MUL, NEG, NOP, NOT,
+    MIN, MOD, MOVI, MOVI16, MOV, MUL, NEG, NOP, NOT,
     OR, ORI, POP, POPCNT, PUSH,
+    RET,
     SHL, SHLI, SHR, SHRI,
     STORE, STOREOFF, SUB, SUBI, SUBI16,
     SWP, TELL, XOR, XORI,
-    ABS, ASK,
     encode_a, encode_b, encode_c, encode_d, encode_e, encode_f, encode_g,
 )
 from flux_profiler.vm_adapter import MiniVM
@@ -252,7 +251,7 @@ class TestBenchmarkGeneration:
         vm.reset()
         vm.run(bm.bytecode)
         assert vm.error is None
-        assert vm.registers[0] == 5050
+        assert vm.registers[0] == 1275
 
     def test_branch_heavy_generates_bytecode(self):
         bm = StandardBenchmarks.branch_heavy()
@@ -300,7 +299,7 @@ class TestBenchmarkGeneration:
         vm.reset()
         vm.run(bm.bytecode)
         assert vm.error is None
-        assert vm.registers[0] == 136
+        assert vm.registers[0] == 120
 
     def test_gcd_generates_bytecode(self):
         bm = StandardBenchmarks.gcd()

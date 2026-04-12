@@ -32,6 +32,24 @@ class PerformanceStats:
     efficiency_score: float = 0.0
     correctness_rate: float = 0.0
 
+    def __init__(self, benchmark_name: str = "", vm_name: str = "", **kwargs):
+        self.benchmark_name = benchmark_name
+        self.vm_name = vm_name
+        self.count = kwargs.pop("count", 0)
+        self.mean_time_ns = kwargs.pop("mean_time_ns", 0.0)
+        self.median_time_ns = kwargs.pop("median_time_ns", 0.0)
+        self.min_time_ns = kwargs.pop("min_time_ns", 0.0)
+        self.max_time_ns = kwargs.pop("max_time_ns", 0.0)
+        self.std_dev_ns = kwargs.pop("std_dev_ns", 0.0)
+        self.total_instructions = kwargs.pop("total_instructions", 0)
+        self.total_cycles = kwargs.pop("total_cycles", 0)
+        self.total_mem_reads = kwargs.pop("total_mem_reads", 0)
+        self.total_mem_writes = kwargs.pop("total_mem_writes", 0)
+        self.throughput_ips = kwargs.pop("throughput_ips", 0.0)
+        self.cycles_per_instruction = kwargs.pop("cycles_per_instruction", 0.0)
+        self.efficiency_score = kwargs.pop("efficiency_score", 0.0)
+        self.correctness_rate = kwargs.pop("correctness_rate", 0.0)
+
     @classmethod
     def from_results(cls, results: list) -> PerformanceStats:
         """Compute statistics from a list of ProfileResult objects.
@@ -281,7 +299,8 @@ class ComparisonTable:
         # Pooled standard error
         se = math.sqrt(var_a / n_a + var_b / n_b)
         if se == 0:
-            return False
+            # No variance within groups; significant only if means differ
+            return mean_a != mean_b
 
         # t-statistic
         t_stat = abs(mean_a - mean_b) / se

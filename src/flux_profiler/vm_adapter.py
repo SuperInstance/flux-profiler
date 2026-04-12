@@ -604,8 +604,9 @@ class MiniVM:
             self.registers[rd] = a
             self.pc += 4
         elif opcode == SWP:
-            self.registers[rd] = b
-            self.registers[rs1] = a
+            old_rd = self.registers[rd]
+            self.registers[rd] = self.registers[rs1]
+            self.registers[rs1] = old_rd
             self.pc += 4
         elif opcode == ADD:
             self.registers[rd] = self._to_i32(a + b)

@@ -122,8 +122,9 @@ class Profiler:
 
         # Measured runs
         results = []
+        vm = self._vms[vm_name]
         for _ in range(iterations):
-            r = self._execute_once(benchmark, vm_name, timeout)
+            r = self._execute_once(benchmark, vm, timeout)
             if r.error is not None:
                 # Return the errored result immediately
                 return r

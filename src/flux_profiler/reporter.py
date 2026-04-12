@@ -26,7 +26,14 @@ class BenchmarkReporter:
             Dict with overview statistics.
         """
         if not results:
-            return {"total_benchmarks": 0, "total_vms": 0}
+            return {
+                "total_benchmarks": 0, "total_vms": 0, "total_runs": 0,
+                "successful_runs": 0, "failed_runs": 0, "correct_runs": 0,
+                "total_time_ns": 0, "total_time_us": 0.0, "total_time_ms": 0.0,
+                "total_instructions": 0, "total_cycles": 0,
+                "avg_throughput_ips": 0,
+                "vm_names": [], "benchmark_names": [], "failure_details": [],
+            }
 
         successful = [r for r in results if r.error is None]
         failed = [r for r in results if r.error is not None]

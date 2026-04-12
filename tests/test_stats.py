@@ -362,7 +362,7 @@ class TestThroughputAnalyzer:
 
     def test_geometric_mean_single(self):
         results = [_make_result(time_ns=5000)]
-        assert ThroughputAnalyzer.geometric_mean(results) == 5000.0
+        assert ThroughputAnalyzer.geometric_mean(results) == pytest.approx(5000.0)
 
     def test_geometric_mean_empty(self):
         assert ThroughputAnalyzer.geometric_mean([]) == 0.0
@@ -370,7 +370,7 @@ class TestThroughputAnalyzer:
     def test_geometric_mean_skips_zero(self):
         results = [_make_result(time_ns=0), _make_result(time_ns=10000)]
         geo = ThroughputAnalyzer.geometric_mean(results)
-        assert geo == 10000.0
+        assert geo == pytest.approx(10000.0)
 
     def test_scaling_analysis(self):
         results = [
